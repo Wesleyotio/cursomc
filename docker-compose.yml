@@ -1,0 +1,129 @@
+# version: '3'
+# services:
+
+#   #JAVA Service
+#   app:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     image: spring/java
+#     extra_hosts:
+#       - "host.docker.internal:host-gateway"
+#     container_name: spring_app
+#     restart: unless-stopped
+#     tty: true
+#     ports:
+#       - "8080:8080"
+#     environment:
+#       SERVICE_NAME: app
+#       SERVICE_TAGS: dev
+#     working_dir: /var/www
+#     volumes:
+#       - ./:/var/www
+#     networks:
+#       - app-network
+
+#   #Nginx Service
+#   webserver:
+#     image: nginx:alpine
+#     container_name: webserver
+#     restart: unless-stopped
+#     tty: true
+#     ports:
+#       - "80:80"
+#       - "443:443"
+#     volumes:
+#       - ./:/var/www
+#       - .docker/nginx/conf.d/:/etc/nginx/conf.d/
+#     networks:
+#       - app-network
+
+#   #MySQL Service
+#   db:
+#     image: mysql:8.0.33
+#     container_name: db
+#     restart: unless-stopped
+#     tty: true
+#     ports:
+#       - "3306:3306"
+#     environment:
+#       MYSQL_DATABASE: cursomc
+#       MYSQL_ROOT_USER: root
+#       MYSQL_ROOT_PASSWORD: secret
+#       SERVICE_TAGS: dev
+#       SERVICE_NAME: mysql
+#     volumes:
+#       - dbdata:/var/lib/mysql/
+#       - .docker/mysql/my.cnf:/etc/mysql/my.cnf
+#     networks:
+#       - app-network
+
+# #Docker Networks
+# networks:
+#   app-network:
+#     driver: bridge
+# #Volumes
+# volumes:
+#   dbdata:
+#     driver: local
+
+version: '3.8'
+services:
+  # nginx:
+  #  container_name: sever-nginx
+  #  image: nginx:1.25
+  #  restart: always
+  #  ports:
+  #   - 80:80
+  #   - 443:443
+  #  volumes:
+  #   - ./nginx/conf.d:/etc/nginx/conf.d
+  #  networks:
+  #   - app-network
+ 
+  mysql:
+    image: mysql:8.0.33
+    container_name: mysql_db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: cursomc
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASSWORD: secret
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql/
+      - .docker/mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - app-network
+  
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app
+    image: spring/java
+    restart: always
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ~/.m2:/root/.m2
+    expose:
+      - "8080"
+    command: mvn clean spring-boot:run
+    depends_on:
+      # - nginx
+      - mysql
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+#Volumes
+volumes:
+  dbdata:
+    driver: local
